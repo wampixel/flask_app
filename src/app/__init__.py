@@ -7,8 +7,8 @@ from .handlers.errors import register_error_handlers
 from .routes import health, users
 
 
-def create_app() -> Flask:
-    configuration = load_configuration()
+def create_app(conf_path: str | None = None) -> Flask:
+    configuration = load_configuration(conf_path)
 
     app = Flask(__name__)
     app.config.from_object(configuration)
