@@ -93,6 +93,17 @@ All routes are mounted under `/api/v1`.
 - Format: `uv run ruff format .`
 - Tests: `uv run pytest -q` (no test suite yet)
 
+## Continuous integration and delivery
+
+The [.github/workflows/ci.yml](.github/workflows/ci.yml) workflow runs on every push to `main`, every pull request, and every `v*.*.*` tag.
+
+1. **Lint** — `ruff check` and `ruff format --check`.
+2. **Test** — `pytest`, with coverage. The threshold is declared in [pyproject.toml](pyproject.toml) (`--cov-fail-under=70`), not in the workflow.
+3. **Build** — `uv build`, the wheel is kept as an artifact.
+4. **Release** — only on a `v*.*.*` tag: reuses the wheel already built in the previous step (no rebuild) and publishes it to the matching GitHub Release.
+
+Pushing a `vX.Y.Z` tag therefore triggers the full chain, then the wheel publication, provided lint and tests pass.
+
 ## License
 
 See [LICENSE](LICENSE).
