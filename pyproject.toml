@@ -27,3 +27,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70"
+
+[tool.ruff]
+line-length = 120
+exclude = ["migrations/**/*.py"]
