@@ -1,4 +1,4 @@
-from .tenant import Tenant
+from .tenant import TenantModel
 from .user import UserModel
 
-__all__ = ["Tenant", "UserModel"]
+__all__ = ["TenantModel", "UserModel"]

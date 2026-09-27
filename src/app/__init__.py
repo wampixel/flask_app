@@ -2,7 +2,7 @@ from flask import Blueprint, Flask
 
 from .cli import register_cli
 from .configuration import load_configuration
-from .extensions import db
+from .extensions import db, migrate
 from .handlers.errors import register_error_handlers
 from .routes import health, users
 
@@ -13,6 +13,7 @@ def create_app(conf_path: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(configuration)
     db.init_app(app)
+    migrate.init_app(app, db)
 
     register_cli(app)
     register_error_handlers(app)
