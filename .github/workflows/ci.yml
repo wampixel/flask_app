@@ -28,6 +28,11 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: true
 
   build:
     needs: test

@@ -1,5 +1,9 @@
 # flask_app
 
+[![CI](https://github.com/wampixel/flask_app/actions/workflows/ci.yml/badge.svg)](https://github.com/wampixel/flask_app/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/wampixel/flask_app/graph/badge.svg)](https://codecov.io/gh/wampixel/flask_app)
+[![Release](https://img.shields.io/github/v/release/wampixel/flask_app)](https://github.com/wampixel/flask_app/releases)
+
 A minimal Flask API scaffold: blueprints under `/api/v1`, SQLAlchemy + Alembic for persistence, Pydantic-validated TOML configuration.
 
 ## Requirements
@@ -98,7 +102,7 @@ All routes are mounted under `/api/v1`.
 The [.github/workflows/ci.yml](.github/workflows/ci.yml) workflow runs on every push to `main`, every pull request, and every `v*.*.*` tag.
 
 1. **Lint** — `ruff check` and `ruff format --check`.
-2. **Test** — `pytest`, with coverage. The threshold is declared in [pyproject.toml](pyproject.toml) (`--cov-fail-under=70`), not in the workflow.
+2. **Test** — `pytest`, with coverage. The threshold is declared in [pyproject.toml](pyproject.toml) (`--cov-fail-under=70`), not in the workflow. The coverage report is uploaded to [Codecov](https://codecov.io), which requires a `CODECOV_TOKEN` repository secret.
 3. **Build** — `uv build`, the wheel is kept as an artifact.
 4. **Release** — only on a `v*.*.*` tag: reuses the wheel already built in the previous step (no rebuild) and publishes it to the matching GitHub Release.
 
