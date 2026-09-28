@@ -19,7 +19,6 @@ class Token(MethodView):
         if creds is None or creds.type != "basic" or not creds.username or not creds.password:
             unauthorized()
 
-        print(creds)
         user: UserModel = db.session.scalar(
             select(UserModel).where(UserModel.username == creds.username.strip().lower())
         )

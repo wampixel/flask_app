@@ -20,7 +20,6 @@ class UsersList(MethodView):
 
 class UsersItem(MethodView):
     def get(self: Self, user_id: int) -> Response:
-        print(user_id)
         if user_id > len(USERS):
             abort(404, description="Resource not found")
         return jsonify(USERS[user_id - 1])
