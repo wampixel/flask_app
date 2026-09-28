@@ -4,7 +4,7 @@ from typing import Self
 
 from flask import Blueprint, Response, jsonify, request
 from flask.views import MethodView
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
 
 from app.extensions import db
 from app.models import SessionModel, UserModel
@@ -26,13 +26,22 @@ class Token(MethodView):
             unauthorized()
 
         now = datetime.now(UTC)
+        idle_timeout = timedelta(hours=8)
+
+        db.session.execute(
+            delete(SessionModel).where(
+                SessionModel.user_id == user.id,
+                or_(SessionModel.expires_at <= now, SessionModel.last_seen_at <= now - idle_timeout),
+            )
+        )
+
         token = token_urlsafe(32)
         session = SessionModel(
             token_hash=get_sha512_hash(token),
             user_id=user.id,
             created_at=now,
             last_seen_at=now,
-            expires_at=now + timedelta(hours=8),
+            expires_at=now + idle_timeout,
         )
         db.session.add(session)
         db.session.commit()
