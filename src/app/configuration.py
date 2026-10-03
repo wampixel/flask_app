@@ -21,11 +21,16 @@ class DatabaseConfig(_Base):
 class AppConfig(_Base):
     env: Literal["dev"]
     port: int = 8000
+    provide_automatic_options: bool = False
     database: DatabaseConfig
 
     @property
     def SQLALCHEMY_DATABASE_URI(self: Self) -> str:
         return self.database.uri
+
+    @property
+    def PROVIDE_AUTOMATIC_OPTIONS(self: Self) -> bool:
+        return self.provide_automatic_options
 
 
 def load_configuration(path: str | None = None) -> AppConfig:

@@ -7,12 +7,11 @@ from sqlalchemy import select
 from app.extensions import db
 from app.models import UserModel
 from app.schemas import UserData, paginate
-from app.views import ApiView
 
 bp = Blueprint("users", __name__, url_prefix="/users")
 
 
-class UsersList(ApiView):
+class UsersList(MethodView):
     def get(self: Self) -> Response:
         page = request.args.get("page", 1, type=int)
         per_page = request.args.get("per_page", 20, type=int)
