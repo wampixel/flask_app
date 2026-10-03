@@ -1,3 +1,4 @@
+from enum import StrEnum
 from os import environ
 from pathlib import Path
 from tomllib import TOMLDecodeError, loads
@@ -5,9 +6,20 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from .errors import ConfigError
-
 CONF_ENV_VAR = "APP_CONFIG_FILE"
+
+
+class ConfigErrorKind(StrEnum):
+    MISSING_PATH = "missing_path"
+    UNREADABLE = "unreadable"
+    INVALID_TOML = "invalid_toml"
+    INVALID_SCHEMA = "invalid_schema"
+
+
+class ConfigError(RuntimeError):
+    def __init__(self: Self, kind: ConfigErrorKind, message: str) -> None:
+        super().__init__(message)
+        self.kind = kind
 
 
 class _Base(BaseModel):
@@ -35,12 +47,14 @@ class AppConfig(_Base):
 
 def load_configuration(path: str | None = None) -> AppConfig:
     if not (path := path or environ.get(CONF_ENV_VAR)):
-        raise ConfigError(f"{CONF_ENV_VAR} is not set")
+        raise ConfigError(ConfigErrorKind.MISSING_PATH, f"{CONF_ENV_VAR} is not set")
 
     try:
         configuration = loads(Path(path).read_text(encoding="utf-8"))
         return AppConfig.model_validate(configuration)
-    except (OSError, TOMLDecodeError) as e:
-        raise ConfigError(f"Error while reading {path}: {e}") from e
+    except OSError as e:
+        raise ConfigError(ConfigErrorKind.UNREADABLE, f"Error while reading {path}: {e}") from e
+    except TOMLDecodeError as e:
+        raise ConfigError(ConfigErrorKind.INVALID_TOML, f"Error while reading {path}: {e}") from e
     except ValidationError as e:
-        raise ConfigError(f"Invalid configuration: {e}") from e
+        raise ConfigError(ConfigErrorKind.INVALID_SCHEMA, f"Invalid configuration: {e}") from e

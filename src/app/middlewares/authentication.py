@@ -1,13 +1,24 @@
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import NoReturn
 
-from flask import current_app, request
+from flask import abort, current_app, request
 from sqlalchemy import select
 
 from app.extensions import db
 from app.models import SessionModel
-from app.utils import get_sha512_hash, unauthorized
+from app.utils import get_sha512_hash
 
 IDLE_TIMEOUT = timedelta(minutes=30)
+
+
+def public[F: Callable[..., object]](func: F) -> F:
+    func.is_public = True
+    return func
+
+
+def unauthorized() -> NoReturn:
+    abort(401)
 
 
 def _is_public_endpoint() -> bool:

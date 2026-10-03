@@ -78,6 +78,13 @@ The app reads a TOML file. Its path comes from the `APP_CONFIG_FILE` environment
 
 The schema is `AppConfig` in [src/app/configuration.py](src/app/configuration.py). Unknown keys are rejected.
 
+A startup failure raises `ConfigError`. Its `kind` attribute, a `ConfigErrorKind`, gives the cause:
+
+- `missing_path`: `APP_CONFIG_FILE` is not set.
+- `unreadable`: the file does not exist or cannot be read.
+- `invalid_toml`: the file is not valid TOML.
+- `invalid_schema`: the content does not match `AppConfig`.
+
 | Key                         | Type    | Default    | Description                                                       |
 | --------------------------- | ------- | ---------- | ----------------------------------------------------------------- |
 | `env`                       | string  | required   | Only `"dev"` is accepted for now.                                 |
@@ -154,7 +161,7 @@ Every error, from `abort()`, `get_or_404()` or the validation, goes through `han
 
 Routes declare their error responses with `ErrorData`, e.g. `HTTP_401=ErrorData`. Spectree adds the `400` on its own, only on routes that validate a query or a body. Schemas are named after their class, without spectree's hash suffix.
 
-To document a new route, add `@api.validate(...)` to the method, with its Pydantic models. Give the method a one-line docstring: it becomes the operation title in Scalar. Without it, Scalar shows `get <GET>`, and a test fails. Put `@public` above it when the route needs no token.
+To document a new route, add `@api.validate(...)` to the method, with its Pydantic models. Give the method a one-line docstring: it becomes the operation title in Scalar. Without it, Scalar shows `get <GET>`, and a test fails. Put `@public` from `app.middlewares` above it when the route needs no token.
 
 ### Adding an API version
 
@@ -190,9 +197,7 @@ src/app/
 ├── configuration.py    # TOML config loading and validation
 ├── extensions.py       # Flask extensions (SQLAlchemy, Migrate)
 ├── handlers.py         # error handlers
-├── decorators/         # route decorators (@public)
-├── errors/             # domain exceptions
-├── middlewares/        # authentication and security middlewares
+├── middlewares/        # authentication (@public, unauthorized) and security middlewares
 ├── models/             # SQLAlchemy models
 ├── routes/             # API blueprints
 ├── schemas/            # Pydantic response schemas

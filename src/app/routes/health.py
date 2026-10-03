@@ -4,8 +4,8 @@ from flask import Blueprint, Response, jsonify
 from flask.views import MethodView
 from spectree import Response as SpecResponse
 
-from app.decorators import public
 from app.extensions import api
+from app.middlewares import public
 from app.schemas import MessageData
 
 bp = Blueprint("health", __name__, url_prefix="/health")

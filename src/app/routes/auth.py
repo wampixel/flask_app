@@ -6,11 +6,11 @@ from flask import Blueprint, Response, jsonify, request
 from spectree import Response as SpecResponse
 from sqlalchemy import delete, or_, select
 
-from app.decorators import public
 from app.extensions import api, db
+from app.middlewares import public, unauthorized
 from app.models import SessionModel, UserModel
 from app.schemas import ErrorData, TokenData
-from app.utils import check_argon2_hash, get_sha512_hash, unauthorized
+from app.utils import check_argon2_hash, get_sha512_hash
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
