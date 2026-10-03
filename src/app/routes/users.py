@@ -1,33 +1,32 @@
 from typing import Self
 
-from flask import Blueprint, Response, abort, jsonify, request
+from flask import Blueprint, Response, request
 from flask.views import MethodView
+from spectree import Response as SpecResponse
 from sqlalchemy import select
 
-from app.extensions import db
+from app.extensions import api, db
 from app.models import UserModel
-from app.schemas import UserData, paginate
+from app.schemas import ErrorData, PaginationParameters, UserData, UsersPage, paginate
 
 bp = Blueprint("users", __name__, url_prefix="/users")
 
 
 class UsersList(MethodView):
+    @api.validate(query=PaginationParameters, resp=SpecResponse(HTTP_200=UsersPage, HTTP_401=ErrorData), tags=["users"])
     def get(self: Self) -> Response:
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 20, type=int)
-        if page < 1 or per_page < 1:
-            abort(400, description="page et per_page doivent être des entiers positifs")
-
+        """/users"""
+        query = request.context.query
         stmts = select(UserModel).order_by(UserModel.id)
-        pagination = db.paginate(stmts, page=page, per_page=per_page, max_per_page=50)
+        pagination = db.paginate(stmts, page=query.page, per_page=query.per_page, max_per_page=50)
         return paginate(pagination, UserData)
 
 
 class UsersItem(MethodView):
-    def get(self: Self, user_id: int) -> Response:
-        user = db.get_or_404(UserModel, user_id)
-
-        return jsonify(name=user.name, last_name=user.last_name, username=user.username)
+    @api.validate(resp=SpecResponse(HTTP_200=UserData, HTTP_401=ErrorData, HTTP_404=ErrorData), tags=["users"])
+    def get(self: Self, user_id: int) -> UserData:
+        """/users/{user_id}"""
+        return UserData.model_validate(db.get_or_404(UserModel, user_id))
 
 
 bp.add_url_rule("", view_func=UsersList.as_view("list"))

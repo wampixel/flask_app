@@ -2,7 +2,7 @@ from flask import Blueprint, Flask
 
 from .cli import register_cli
 from .configuration import load_configuration
-from .extensions import db, migrate
+from .extensions import api, db, migrate
 from .handlers import register_error_handlers
 from .middlewares import authenticate, register_middlewares
 from .routes import auth_bp, health_bp, users_bp
@@ -27,5 +27,6 @@ def create_app(conf_path: str | None = None) -> Flask:
     v1.register_blueprint(users_bp)
 
     app.register_blueprint(v1)
+    api.register(app)
 
     return app

@@ -3,11 +3,13 @@ from secrets import token_urlsafe
 from typing import Self
 
 from flask import Blueprint, Response, jsonify, request
+from spectree import Response as SpecResponse
 from sqlalchemy import delete, or_, select
 
 from app.decorators import public
-from app.extensions import db
+from app.extensions import api, db
 from app.models import SessionModel, UserModel
+from app.schemas import ErrorData, TokenData
 from app.utils import check_argon2_hash, get_sha512_hash, unauthorized
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -17,7 +19,9 @@ from flask.views import MethodView
 
 class Token(MethodView):
     @public
+    @api.validate(resp=SpecResponse(HTTP_201=TokenData, HTTP_401=ErrorData), tags=["auth"], security={"basic": []})
     def post(self: Self) -> Response:
+        """/auth/token"""
         creds = request.authorization
         if creds is None or creds.type != "basic" or not creds.username or not creds.password:
             unauthorized()

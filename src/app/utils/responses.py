@@ -1,7 +1,7 @@
-from flask import abort, jsonify
+from typing import NoReturn
+
+from flask import abort
 
 
-def unauthorized() -> None:
-    resp = jsonify(message="Unauthorized")
-    resp.status_code = 401
-    abort(resp)
+def unauthorized() -> NoReturn:
+    abort(401)

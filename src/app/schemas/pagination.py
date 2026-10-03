@@ -7,7 +7,7 @@ T = TypeVar("T")
 
 class PaginationParameters(BaseModel):
     page: int = Field(default=1, ge=1)
-    per_page: int = Field(default=20, ge=1, le=100)
+    per_page: int = Field(default=20, ge=1, le=50)
 
 
 class PaginationMeta(BaseModel):
