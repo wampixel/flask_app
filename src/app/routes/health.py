@@ -1,12 +1,13 @@
 from typing import Self
 
 from flask import Blueprint, Response, jsonify
-from flask.views import MethodView
+
+from app.views import ApiView
 
 bp = Blueprint("health", __name__, url_prefix="/health")
 
 
-class Health(MethodView):
+class Health(ApiView):
     def get(self: Self) -> Response:
         return jsonify(message="healthy service"), 200
 

@@ -5,7 +5,7 @@ from .configuration import load_configuration
 from .extensions import db, migrate
 from .handlers import register_error_handlers
 from .middlewares import authenticate, register_middlewares
-from .routes import auth, health, users
+from .routes import auth_bp, health_bp, users_bp
 
 
 def create_app(conf_path: str | None = None) -> Flask:
@@ -22,9 +22,9 @@ def create_app(conf_path: str | None = None) -> Flask:
 
     v1 = Blueprint("v1", __name__, url_prefix="/api/v1")
     v1.before_request(authenticate)
-    v1.register_blueprint(health.bp)
-    v1.register_blueprint(auth.bp)
-    v1.register_blueprint(users.bp)
+    v1.register_blueprint(health_bp)
+    v1.register_blueprint(auth_bp)
+    v1.register_blueprint(users_bp)
 
     app.register_blueprint(v1)
 

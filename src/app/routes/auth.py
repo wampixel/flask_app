@@ -3,18 +3,18 @@ from secrets import token_urlsafe
 from typing import Self
 
 from flask import Blueprint, Response, jsonify, request
-from flask.views import MethodView
 from sqlalchemy import delete, or_, select
 
 from app.decorators import public
 from app.extensions import db
 from app.models import SessionModel, UserModel
 from app.utils import check_argon2_hash, get_sha512_hash, unauthorized
+from app.views import ApiView
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-class Token(MethodView):
+class Token(ApiView):
     @public
     def post(self: Self) -> Response:
         creds = request.authorization
