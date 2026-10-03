@@ -30,5 +30,5 @@ class UsersItem(MethodView):
         return jsonify(name=user.name, last_name=user.last_name, username=user.username)
 
 
-bp.add_url_rule("/", view_func=UsersList.as_view("list"))
+bp.add_url_rule("", view_func=UsersList.as_view("list"))
 bp.add_url_rule("/<int:user_id>", view_func=UsersItem.as_view("user"))
