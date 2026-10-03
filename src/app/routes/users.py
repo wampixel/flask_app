@@ -5,12 +5,10 @@ from flask.views import MethodView
 from sqlalchemy import select
 
 from app.extensions import db
-from app.middlewares import authenticate
 from app.models import UserModel
 from app.schemas import UserData, paginate
 
 bp = Blueprint("users", __name__, url_prefix="/users")
-bp.before_request(authenticate)
 
 
 class UsersList(MethodView):

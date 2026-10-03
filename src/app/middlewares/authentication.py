@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from flask import abort, jsonify, request
+from flask import abort, current_app, jsonify, request
 from sqlalchemy import select
 
 from app.extensions import db
@@ -16,11 +16,23 @@ def unauthorized(message: str = "Unauthorized") -> None:
     abort(resp)
 
 
+def _is_public_endpoint() -> bool:
+    view = current_app.view_functions[request.endpoint]
+    if (view_class := getattr(view, "view_class", None)) is None:
+        return getattr(view, "is_public", False)
+
+    if (method := request.method.lower()) == "head" and not hasattr(view_class, "head"):
+        method = "get"
+    handler = getattr(view_class, method, False)
+    return getattr(handler, "is_public", False)
+
+
 def authenticate() -> None:
-    if request.endpoint is None:
+    if request.endpoint is None or _is_public_endpoint():
         return
-    auth = request.headers.get("Authorization", "")
-    if not (token := auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer") else ""):
+    scheme, _, token = request.headers.get("Authorization", "").partition(" ")
+    token = token.strip()
+    if scheme.lower() != "bearer" or not token:
         unauthorized()
 
     now = datetime.now(UTC)

@@ -4,7 +4,7 @@ from .cli import register_cli
 from .configuration import load_configuration
 from .extensions import db, migrate
 from .handlers import register_error_handlers
-from .middlewares import register_middlewares
+from .middlewares import authenticate, register_middlewares
 from .routes import auth, health, users
 
 
@@ -21,6 +21,7 @@ def create_app(conf_path: str | None = None) -> Flask:
     register_middlewares(app)
 
     v1 = Blueprint("v1", __name__, url_prefix="/api/v1")
+    v1.before_request(authenticate)
     v1.register_blueprint(health.bp)
     v1.register_blueprint(auth.bp)
     v1.register_blueprint(users.bp)
