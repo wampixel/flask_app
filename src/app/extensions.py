@@ -2,6 +2,7 @@ from importlib.metadata import version
 
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from flask_talisman import Talisman
 from spectree import SecurityScheme
 from spectree.models import SecureType, SecuritySchemeData
 from spectree.page import PAGE_TEMPLATES
@@ -13,6 +14,7 @@ from app.schemas import ErrorData
 
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
+talisman = Talisman()
 
 api = ApiSpec(
     "flask",

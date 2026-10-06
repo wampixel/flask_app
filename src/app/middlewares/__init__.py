@@ -1,11 +1,4 @@
-from flask import Flask
-
 from .authentication import BEARER_SCHEME, authenticate, public, unauthorized
-from .security import set_security_headers
+from .security import register_security, relax_doc_csp
 
-
-def register_middlewares(app: Flask) -> None:
-    app.after_request(set_security_headers)
-
-
-__all__ = ["BEARER_SCHEME", "authenticate", "public", "register_middlewares", "unauthorized"]
+__all__ = ["BEARER_SCHEME", "authenticate", "public", "register_security", "relax_doc_csp", "unauthorized"]

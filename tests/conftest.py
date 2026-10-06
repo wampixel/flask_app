@@ -8,7 +8,7 @@ from app import create_app
 from app.extensions import db
 
 DEFAULT_CONFIGURATION = """
-env = 'dev'
+env = '{env}'
 provide_automatic_options={automatic_options}
 
 
@@ -23,9 +23,14 @@ def automatic_options() -> bool:
 
 
 @fixture
-def app_config_file(automatic_options: bool) -> Iterator[str]:
+def env() -> str:
+    return "dev"
+
+
+@fixture
+def app_config_file(env: str, automatic_options: bool) -> Iterator[str]:
     with NamedTemporaryFile("w", suffix=".toml", encoding="utf-8") as tmp:
-        tmp.write(DEFAULT_CONFIGURATION.format(automatic_options=str(automatic_options).lower()))
+        tmp.write(DEFAULT_CONFIGURATION.format(env=env, automatic_options=str(automatic_options).lower()))
         tmp.flush()
         yield tmp.name
 

@@ -89,9 +89,11 @@ A startup failure raises `ConfigError`. Its `kind` attribute, a `ConfigErrorKind
 
 | Key                         | Type    | Default    | Description                                                       |
 | --------------------------- | ------- | ---------- | ----------------------------------------------------------------- |
-| `env`                       | string  | required   | Only `"dev"` is accepted for now.                                 |
+| `env`                       | string  | required   | `"dev"` or `"prod"`. `"dev"` turns on `DEBUG` and relaxes HTTPS.  |
 | `port`                      | integer | `8000`     | Validated but not used by `flask run`. Use `FLASK_RUN_PORT`.      |
 | `provide_automatic_options` | boolean | `false`    | Lets Flask answer `OPTIONS` requests automatically on each route. |
+| `force_https`               | boolean | env-based  | Redirects HTTP to HTTPS. `false` in dev, `true` in prod.          |
+| `strict_transport_security` | boolean | env-based  | Sends the HSTS header. `false` in dev, `true` in prod.            |
 | `database.uri`              | string  | required   | SQLAlchemy database URI.                                          |
 
 The committed [configuration.toml](configuration.toml) works out of the box:
@@ -172,6 +174,17 @@ There is only `/api/v1` today. When `/api/v2` arrives:
 - Create one `SpecTree` instance per version, for example `api_v2` with `path="apidoc/v2"`. Set `mode="strict"` on every instance. In strict mode, an instance collects only the routes it decorated, so each version keeps its own spec.
 - For a single Scalar page with a version selector, replace the built-in template with a custom one. It passes `sources: [{title: "v1", url: ...}, {title: "v2", url: ...}]` to Scalar.
 
+## Security headers
+
+[Flask-Talisman](https://github.com/wntrblm/flask-talisman) sets the security headers on every response.
+
+- API routes get a strict CSP: `default-src 'none'; frame-ancestors 'none'`. They return JSON and load nothing.
+- The `/apidoc` page gets a wider CSP. Scalar needs inline scripts and styles, and its bundle comes from `cdn.jsdelivr.net`. `/apidoc/openapi.json` keeps the strict CSP.
+- `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `Permissions-Policy` are always sent.
+- HTTPS redirect and HSTS follow `env`: off in `dev`, on in `prod`. `force_https` and `strict_transport_security` override that default either way. Set both to `false` in prod when a reverse proxy handles TLS.
+
+`env = "dev"` also sets Flask's `DEBUG`. The `flask run` reloader and debugger still need `--debug` or `FLASK_DEBUG`.
+
 ## Database migrations
 
 Migrations live in [migrations/](migrations/) and run through the Flask-Migrate CLI, so they use the database from your configuration file.
@@ -197,9 +210,9 @@ src/app/
 ├── __init__.py         # app factory, blueprint registration
 ├── cli.py              # custom Flask CLI commands (init-db, seed-db)
 ├── configuration.py    # TOML config loading and validation
-├── extensions.py       # Flask extensions (SQLAlchemy, Migrate)
+├── extensions.py       # Flask extensions (SQLAlchemy, Migrate, Talisman)
 ├── handlers.py         # error handlers
-├── middlewares/        # authentication (@public, unauthorized) and security middlewares
+├── middlewares/        # authentication (@public, unauthorized) and Talisman security headers
 ├── models/             # SQLAlchemy models
 ├── routes/             # API blueprints
 ├── schemas/            # Pydantic response schemas
