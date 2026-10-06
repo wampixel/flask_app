@@ -37,8 +37,8 @@ Create the two environment files at the project root. Both are gitignored.
 ```sh
 cat > .flaskenv <<'EOF'
 FLASK_APP=app
-FLASK_RUN_PORT=8000
 FLASK_DEBUG=1
+FLASK_RUN_PORT=8000
 EOF
 ```
 
@@ -67,6 +67,8 @@ Start the development server:
 uv run flask run
 ```
 
+The port and debug mode belong to the Flask CLI, not to the configuration file. `FLASK_DEBUG=1` turns on `DEBUG`, the reloader and the debugger. `--port` and `--debug` override `.flaskenv` for one run: `uv run flask --debug run --port 9000`.
+
 Check that it answers:
 
 ```sh
@@ -89,19 +91,19 @@ A startup failure raises `ConfigError`. Its `kind` attribute, a `ConfigErrorKind
 
 | Key                         | Type    | Default    | Description                                                       |
 | --------------------------- | ------- | ---------- | ----------------------------------------------------------------- |
-| `env`                       | string  | required   | `"dev"` or `"prod"`. `"dev"` turns on `DEBUG` and relaxes HTTPS.  |
-| `port`                      | integer | `8000`     | Validated but not used by `flask run`. Use `FLASK_RUN_PORT`.      |
 | `provide_automatic_options` | boolean | `false`    | Lets Flask answer `OPTIONS` requests automatically on each route. |
-| `force_https`               | boolean | env-based  | Redirects HTTP to HTTPS. `false` in dev, `true` in prod.          |
-| `strict_transport_security` | boolean | env-based  | Sends the HSTS header. `false` in dev, `true` in prod.            |
+| `force_https`               | boolean | `true`     | Redirects HTTP to HTTPS.                                          |
+| `strict_transport_security` | boolean | `true`     | Sends the HSTS header.                                            |
 | `database.uri`              | string  | required   | SQLAlchemy database URI.                                          |
+
+Defaults are production values. A development configuration turns the two HTTPS flags off.
 
 The committed [configuration.toml](configuration.toml) works out of the box:
 
 ```toml
-env = "dev"
-port = 8080
 provide_automatic_options = false
+force_https = false
+strict_transport_security = false
 
 [database]
 uri = "sqlite:///app.db"
@@ -181,9 +183,7 @@ There is only `/api/v1` today. When `/api/v2` arrives:
 - API routes get a strict CSP: `default-src 'none'; frame-ancestors 'none'`. They return JSON and load nothing.
 - The `/apidoc` page gets a wider CSP. Scalar needs inline scripts and styles, and its bundle comes from `cdn.jsdelivr.net`. `/apidoc/openapi.json` keeps the strict CSP.
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `Permissions-Policy` are always sent.
-- HTTPS redirect and HSTS follow `env`: off in `dev`, on in `prod`. `force_https` and `strict_transport_security` override that default either way. Set both to `false` in prod when a reverse proxy handles TLS.
-
-`env = "dev"` also sets Flask's `DEBUG`. The `flask run` reloader and debugger still need `--debug` or `FLASK_DEBUG`.
+- HTTPS redirect and HSTS are on by default. Set `force_https` and `strict_transport_security` to `false` in development, or in production when a reverse proxy handles TLS.
 
 ## Database migrations
 

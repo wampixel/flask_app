@@ -2,7 +2,7 @@ from enum import StrEnum
 from os import environ
 from pathlib import Path
 from tomllib import TOMLDecodeError, loads
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -31,30 +31,10 @@ class DatabaseConfig(_Base):
 
 
 class AppConfig(_Base):
-    env: Literal["dev", "prod"]
-    port: int = 8000
     provide_automatic_options: bool = False
-    force_https: bool | None = None
-    strict_transport_security: bool | None = None
+    force_https: bool = True
+    strict_transport_security: bool = True
     database: DatabaseConfig
-
-    @property
-    def is_dev(self: Self) -> bool:
-        return self.env == "dev"
-
-    @property
-    def https_forced(self: Self) -> bool:
-        return self.force_https if self.force_https is not None else not self.is_dev
-
-    @property
-    def hsts_enabled(self: Self) -> bool:
-        if self.strict_transport_security is not None:
-            return self.strict_transport_security
-        return not self.is_dev
-
-    @property
-    def DEBUG(self: Self) -> bool:
-        return self.is_dev
 
     @property
     def SQLALCHEMY_DATABASE_URI(self: Self) -> str:

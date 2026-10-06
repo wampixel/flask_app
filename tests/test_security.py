@@ -24,15 +24,15 @@ def test_doc_spec_keeps_strict_csp(client: FlaskClient) -> None:
     assert resp.headers["Content-Security-Policy"] == STRICT_CSP
 
 
-@mark.parametrize("env", ["prod"])
-def test_prod_redirects_http_to_https(client: FlaskClient) -> None:
+@mark.parametrize("https", [True])
+def test_https_redirects_http_to_https(client: FlaskClient) -> None:
     resp = client.get("/api/v1/health")
     assert resp.status_code == 302
     assert resp.headers["Location"].startswith("https://")
 
 
-@mark.parametrize("env", ["prod"])
-def test_prod_sends_hsts_over_https(client: FlaskClient) -> None:
+@mark.parametrize("https", [True])
+def test_https_sends_hsts_over_https(client: FlaskClient) -> None:
     resp = client.get("/api/v1/health", base_url="https://localhost")
     assert resp.status_code == 200
     assert "max-age=" in resp.headers["Strict-Transport-Security"]

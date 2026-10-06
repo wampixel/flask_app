@@ -19,8 +19,8 @@ DOC_CSP = {
 def register_security(app: Flask, configuration: AppConfig) -> None:
     talisman.init_app(
         app,
-        force_https=configuration.https_forced,
-        strict_transport_security=configuration.hsts_enabled,
+        force_https=configuration.force_https,
+        strict_transport_security=configuration.strict_transport_security,
         frame_options=DENY,
         x_content_type_options=True,
         content_security_policy=ENDPOINT_CSP,

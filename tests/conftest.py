@@ -8,7 +8,8 @@ from app import create_app
 from app.extensions import db
 
 DEFAULT_CONFIGURATION = """
-env = '{env}'
+force_https={https}
+strict_transport_security={https}
 provide_automatic_options={automatic_options}
 
 
@@ -23,14 +24,16 @@ def automatic_options() -> bool:
 
 
 @fixture
-def env() -> str:
-    return "dev"
+def https() -> bool:
+    return False
 
 
 @fixture
-def app_config_file(env: str, automatic_options: bool) -> Iterator[str]:
+def app_config_file(https: bool, automatic_options: bool) -> Iterator[str]:
     with NamedTemporaryFile("w", suffix=".toml", encoding="utf-8") as tmp:
-        tmp.write(DEFAULT_CONFIGURATION.format(env=env, automatic_options=str(automatic_options).lower()))
+        tmp.write(
+            DEFAULT_CONFIGURATION.format(https=str(https).lower(), automatic_options=str(automatic_options).lower())
+        )
         tmp.flush()
         yield tmp.name
 

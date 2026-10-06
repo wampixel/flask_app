@@ -4,7 +4,10 @@ from pytest import MonkeyPatch, mark, raises
 
 from app.configuration import CONF_ENV_VAR, AppConfig, ConfigError, ConfigErrorKind, load_configuration
 
-VALID = 'env = "dev"\n[database]\nuri = "sqlite://"\n'
+VALID = """
+[database]
+uri = "sqlite://"
+"""
 
 
 def write_config(tmp_path: Path, content: str) -> str:
@@ -35,8 +38,8 @@ def test_unreadable_file_is_typed(tmp_path: Path) -> None:
 @mark.parametrize(
     ("content", "kind"),
     [
-        ("env = ", ConfigErrorKind.INVALID_TOML),
-        ('env = "dev"\n', ConfigErrorKind.INVALID_SCHEMA),
+        ("force_https = ", ConfigErrorKind.INVALID_TOML),
+        ("force_https = true", ConfigErrorKind.INVALID_SCHEMA),
         (VALID + 'unknown = "x"\n', ConfigErrorKind.INVALID_SCHEMA),
     ],
     ids=["malformed", "missing_database", "unknown_key"],
@@ -47,27 +50,7 @@ def test_bad_content_is_typed(tmp_path: Path, content: str, kind: ConfigErrorKin
     assert excinfo.value.kind is kind
 
 
-@mark.parametrize(
-    ("overrides", "debug", "https_forced", "hsts_enabled"),
-    [
-        ('env = "dev"\n', True, False, False),
-        ('env = "dev"\nforce_https = true\n', True, True, False),
-        ('env = "dev"\nstrict_transport_security = true\n', True, False, True),
-        ('env = "prod"\n', False, True, True),
-        ('env = "prod"\nforce_https = false\nstrict_transport_security = false\n', False, False, False),
-    ],
-    ids=["dev", "dev_https", "dev_hsts", "prod", "prod_behind_proxy"],
-)
-def test_env_drives_debug_and_https(
-    tmp_path: Path, overrides: str, debug: bool, https_forced: bool, hsts_enabled: bool
-) -> None:
-    configuration = load_configuration(write_config(tmp_path, overrides + '[database]\nuri = "sqlite://"\n'))
-    assert configuration.DEBUG is debug
-    assert configuration.https_forced is https_forced
-    assert configuration.hsts_enabled is hsts_enabled
-
-
-def test_unknown_env_is_rejected(tmp_path: Path) -> None:
-    with raises(ConfigError) as excinfo:
-        load_configuration(write_config(tmp_path, VALID.replace('"dev"', '"staging"')))
-    assert excinfo.value.kind is ConfigErrorKind.INVALID_SCHEMA
+def test_defaults_are_production_safe(tmp_path: Path) -> None:
+    configuration = load_configuration(write_config(tmp_path, VALID))
+    assert configuration.force_https is True
+    assert configuration.strict_transport_security is True

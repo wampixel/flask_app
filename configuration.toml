@@ -1,6 +1,6 @@
-env='dev'
-port=8080
 provide_automatic_options=false
+force_https=false
+strict_transport_security=false
 
 [database]
 uri="sqlite:///app.db"
