@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import SessionModel
 from app.utils import get_sha512_hash
 
+BEARER_SCHEME = "Bearer"
 IDLE_TIMEOUT = timedelta(minutes=30)
 
 
@@ -37,7 +38,7 @@ def authenticate() -> None:
         return
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     token = token.strip()
-    if scheme.lower() != "bearer" or not token:
+    if scheme.lower() != BEARER_SCHEME.lower() or not token:
         unauthorized()
 
     now = datetime.now(UTC)

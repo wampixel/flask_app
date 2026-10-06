@@ -3,18 +3,17 @@ from secrets import token_urlsafe
 from typing import Self
 
 from flask import Blueprint, Response, jsonify, request
+from flask.views import MethodView
 from spectree import Response as SpecResponse
 from sqlalchemy import delete, or_, select
 
 from app.extensions import api, db
-from app.middlewares import public, unauthorized
+from app.middlewares import BEARER_SCHEME, public, unauthorized
 from app.models import SessionModel, UserModel
 from app.schemas import ErrorData, TokenData
 from app.utils import check_argon2_hash, get_sha512_hash
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
-
-from flask.views import MethodView
 
 
 class Token(MethodView):
@@ -53,7 +52,13 @@ class Token(MethodView):
         db.session.add(session)
         db.session.commit()
 
-        resp = jsonify(access_token=token, token_type="Bearer", expires_at=session.expires_at.isoformat())
+        resp = jsonify(
+            {
+                "access_token": token,
+                "token_type": BEARER_SCHEME,
+                "expires_at": session.expires_at.isoformat(),
+            }
+        )
         resp.status_code = 201
         resp.headers["Cache-Control"] = "no-store"
 

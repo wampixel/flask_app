@@ -6,8 +6,6 @@ from .extensions import db
 from .models import TenantModel, UserModel
 from .utils import get_argon2_hash
 
-DEFAULT_PASSWORD = "Changeme12345!"
-
 
 def register_cli(app: Flask) -> None:
     @app.cli.command("init-db")
@@ -16,7 +14,8 @@ def register_cli(app: Flask) -> None:
         click.echo("DB successfully initialized")
 
     @app.cli.command("seed-db")
-    def seed() -> None:
+    @click.option("--password", prompt=True, hide_input=True, help="Password given to every demo user.")
+    def seed(password: str) -> None:
         if db.session.query(TenantModel).first() is None:
             db.session.add(TenantModel(name="acme"))
             db.session.add(TenantModel(name="Umbrella corp"))
@@ -32,7 +31,7 @@ def register_cli(app: Flask) -> None:
                     name="John",
                     last_name="Doe",
                     tenant=acme,
-                    passphrase=get_argon2_hash(DEFAULT_PASSWORD),
+                    passphrase=get_argon2_hash(password),
                 )
             )
             db.session.add(
@@ -41,7 +40,7 @@ def register_cli(app: Flask) -> None:
                     name="John",
                     last_name="Don't",
                     tenant=umbrella,
-                    passphrase=get_argon2_hash(DEFAULT_PASSWORD),
+                    passphrase=get_argon2_hash(password),
                 )
             )
             db.session.commit()

@@ -56,8 +56,10 @@ Create the database schema, then load the demo data:
 
 ```sh
 uv run flask init-db
-uv run flask seed-db
+uv run flask seed-db --password 'Changeme12345!'
 ```
+
+Without `--password`, the command prompts for it.
 
 Start the development server:
 
@@ -131,12 +133,12 @@ Session rules:
 
 ## Demo data
 
-`flask seed-db` creates the following records, only if the tables are empty.
+`flask seed-db --password <password>` creates the following records, only if the tables are empty. Every user gets the given password; the examples below assume `Changeme12345!`.
 
-| Username | Tenant          | Password         |
-| -------- | --------------- | ---------------- |
-| `jdoe`   | `acme`          | `Changeme12345!` |
-| `jdont`  | `Umbrella corp` | `Changeme12345!` |
+| Username | Tenant          |
+| -------- | --------------- |
+| `jdoe`   | `acme`          |
+| `jdont`  | `Umbrella corp` |
 
 These credentials are for local development only.
 
@@ -214,6 +216,8 @@ tests/                  # pytest suite
 | Format        | `uv run ruff format .`      |
 | Tests         | `uv run pytest`             |
 
+`ruff check` also covers security: the `S` rules port Bandit's checks.
+
 Tests use an in-memory SQLite database and a temporary configuration file. They need neither `.env` nor `.flaskenv`.
 
 `pytest` also measures coverage and fails under 70 %. The threshold is set in [pyproject.toml](pyproject.toml).
@@ -222,7 +226,7 @@ Tests use an in-memory SQLite database and a temporary configuration file. They 
 
 The [.github/workflows/ci.yml](.github/workflows/ci.yml) workflow runs on every push to `main`, every pull request, and every `v*.*.*` tag.
 
-1. **Lint** — `ruff check` and `ruff format --check`.
+1. **Lint** — `ruff check`, then `ruff format --check`. The `S` rules scan the code for common security issues and fail the job on any finding. Findings are fixed in the code, never silenced with `# noqa: S…`.
 2. **Test** — `pytest` with coverage. The report is uploaded to [Codecov](https://codecov.io), which requires a `CODECOV_TOKEN` repository secret.
 3. **Build** — `uv build`. The wheel is kept as an artifact.
 4. **Release** — only on a `v*.*.*` tag. It publishes the wheel built in the previous step to the matching GitHub Release, without rebuilding it.
