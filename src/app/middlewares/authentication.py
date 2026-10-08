@@ -23,18 +23,19 @@ def unauthorized() -> NoReturn:
 
 
 def _is_public_endpoint() -> bool:
-    view = current_app.view_functions[request.endpoint]
-    if (view_class := getattr(view, "view_class", None)) is None:
-        return getattr(view, "is_public", False)
-
+    view_class = getattr(current_app.view_functions[request.endpoint], "view_class", None)
     if (method := request.method.lower()) == "head" and not hasattr(view_class, "head"):
         method = "get"
     handler = getattr(view_class, method, False)
     return getattr(handler, "is_public", False)
 
 
+def _is_automatic_options() -> bool:
+    return request.method == "OPTIONS" and request.url_rule.provide_automatic_options
+
+
 def authenticate() -> None:
-    if request.endpoint is None or _is_public_endpoint():
+    if request.endpoint is None or _is_automatic_options() or _is_public_endpoint():
         return
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     token = token.strip()
