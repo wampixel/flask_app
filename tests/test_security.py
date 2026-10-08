@@ -24,6 +24,12 @@ def test_doc_spec_keeps_strict_csp(client: FlaskClient) -> None:
     assert resp.headers["Content-Security-Policy"] == STRICT_CSP
 
 
+def test_disabled_hsts_stays_off_over_https(client: FlaskClient) -> None:
+    resp = client.get("/api/v1/health", base_url="https://localhost")
+    assert resp.status_code == 200
+    assert "Strict-Transport-Security" not in resp.headers
+
+
 @mark.parametrize("https", [True])
 def test_https_redirects_http_to_https(client: FlaskClient) -> None:
     resp = client.get("/api/v1/health")

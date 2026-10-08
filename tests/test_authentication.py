@@ -1,10 +1,13 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 
-from flask import Flask
+from flask import Blueprint, Flask
 from flask.testing import FlaskClient
-from pytest import fixture, mark
+from flask.views import MethodView
+from pytest import MonkeyPatch, fixture, mark
 
 from app.extensions import db
+from app.middlewares import authenticate, public
+from app.middlewares.authentication import IDLE_TIMEOUT
 from app.models import SessionModel, TenantModel, UserModel
 from app.utils import get_argon2_hash
 
@@ -32,11 +35,50 @@ def bearer(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def shift_session(**changes: timedelta) -> None:
+def set_session(**values: datetime) -> None:
     session = db.session.scalar(db.select(SessionModel))
-    for field, delta in changes.items():
-        setattr(session, field, datetime.now(UTC) + delta)
+    for field, value in values.items():
+        setattr(session, field, value)
     db.session.commit()
+
+
+def shift_session(**changes: timedelta) -> None:
+    set_session(**{field: datetime.now(UTC) + delta for field, delta in changes.items()})
+
+
+@fixture
+def frozen_now(monkeypatch: MonkeyPatch) -> datetime:
+    now = datetime.now(UTC).replace(microsecond=0)
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> datetime:
+            return now
+
+    monkeypatch.setattr("app.middlewares.authentication.datetime", FrozenDatetime)
+    return now
+
+
+class HeadProtectedView(MethodView):
+    @public
+    def get(self) -> str:
+        return "public"
+
+    def head(self) -> str:
+        return ""
+
+
+def function_view() -> str:
+    return "function"
+
+
+@fixture
+def probe(app: Flask) -> None:
+    probe = Blueprint("probe", __name__, url_prefix="/probe")
+    probe.before_request(authenticate)
+    probe.add_url_rule("/head", view_func=HeadProtectedView.as_view("head_protected"))
+    probe.add_url_rule("/function", view_func=function_view)
+    app.register_blueprint(probe)
 
 
 def test_token_grants_access_to_protected_route(client: FlaskClient, token: str) -> None:
@@ -69,6 +111,18 @@ def test_protected_route_rejects_idle_session(client: FlaskClient, token: str) -
     assert client.get(USERS_URL, headers=bearer(token)).status_code == 401
 
 
+def test_protected_route_rejects_session_expiring_now(client: FlaskClient, token: str, frozen_now: datetime) -> None:
+    set_session(expires_at=frozen_now)
+    assert client.get(USERS_URL, headers=bearer(token)).status_code == 401
+
+
+def test_protected_route_rejects_session_idle_for_exactly_the_timeout(
+    client: FlaskClient, token: str, frozen_now: datetime
+) -> None:
+    set_session(last_seen_at=frozen_now - IDLE_TIMEOUT)
+    assert client.get(USERS_URL, headers=bearer(token)).status_code == 401
+
+
 @mark.parametrize("automatic_options", [True])
 def test_automatic_options_answers_without_token(client: FlaskClient) -> None:
     resp = client.options(USERS_URL)
@@ -83,6 +137,15 @@ def test_disabled_automatic_options_rejects_options(client: FlaskClient) -> None
 
 def test_public_route_accepts_head_without_token(client: FlaskClient) -> None:
     assert client.head("/api/v1/health").status_code == 200
+
+
+def test_own_head_method_ignores_public_get(client: FlaskClient, probe: None) -> None:
+    assert client.get("/probe/head").status_code == 200
+    assert client.head("/probe/head").status_code == 401
+
+
+def test_function_view_requires_token(client: FlaskClient, probe: None) -> None:
+    assert client.get("/probe/function").status_code == 401
 
 
 def test_token_rejects_wrong_passphrase(client: FlaskClient, user: UserModel) -> None:
