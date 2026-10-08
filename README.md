@@ -113,7 +113,7 @@ A relative SQLite path resolves inside the Flask instance folder. With the defau
 
 ## Authentication
 
-Every route under `/api/v1` requires a bearer token, except the ones marked public: `GET /health` and `POST /auth/token`. `@public` only works on a `MethodView` method. A plain function view always requires a token. When `provide_automatic_options` is on, `OPTIONS` requests need no token either: Flask answers them itself, with the `Allow` header, without running the view.
+Every route under `/api/v1` requires a bearer token, except the ones marked public: `GET /health` and `POST /auth/token`. `@public` only works on a `MethodView` method. A plain function view always requires a token. A `HEAD` request follows the `get` method when the view defines no `head`, so a public `GET` is also a public `HEAD`. When `provide_automatic_options` is on, `OPTIONS` requests need no token either: Flask answers them itself, with the `Allow` header, without running the view.
 
 Get a token with HTTP Basic credentials:
 
@@ -210,6 +210,8 @@ src/app/
 ├── __init__.py         # app factory, blueprint registration
 ├── cli.py              # custom Flask CLI commands (init-db, seed-db)
 ├── configuration.py    # TOML config loading and validation
+├── database.py         # SQLAlchemy declarative base and constraint naming convention
+├── documentation.py    # spectree subclass that drops the 400 response on routes without input
 ├── extensions.py       # Flask extensions (SQLAlchemy, Migrate, Talisman)
 ├── handlers.py         # error handlers
 ├── middlewares/        # authentication (@public, unauthorized) and Talisman security headers
