@@ -228,6 +228,7 @@ tests/                  # pytest suite
 | Lint          | `uv run ruff check .`       |
 | Format        | `uv run ruff format .`      |
 | Tests         | `uv run pytest`             |
+| Mutation      | `uv run mutmut run`         |
 
 `ruff check` also covers security: the `S` rules port Bandit's checks.
 
@@ -235,14 +236,22 @@ Tests use an in-memory SQLite database and a temporary configuration file. They 
 
 `pytest` also measures coverage and fails under 70 %. The threshold is set in [pyproject.toml](pyproject.toml).
 
+Coverage tells which lines the tests run, not whether they check anything. `mutmut` fills that gap: it alters the code one small change at a time (`>` into `>=`, `True` into `False`, a dropped call) and reruns the tests. A test fails: the mutant is killed. Everything stays green: the mutant survived, and no test guards that line.
+
+- `uv run mutmut results` lists the survivors, `uv run mutmut show <name>` prints one diff, `uv run mutmut browse` opens an interactive view.
+- The configuration lives in `[tool.mutmut]` in [pyproject.toml](pyproject.toml). Models, extensions and app wiring are excluded: they are declarations, with no logic to kill.
+- Mutants run with `--no-cov`, since a partial test run would fall under the coverage threshold.
+- The work directory `mutants/` is ignored by Git.
+
 ## Continuous integration and delivery
 
 The [.github/workflows/ci.yml](.github/workflows/ci.yml) workflow runs on every push to `main`, every pull request, and every `v*.*.*` tag.
 
 1. **Lint** — `ruff check`, then `ruff format --check`. The `S` rules scan the code for common security issues and fail the job on any finding. Findings are fixed in the code, never silenced with `# noqa: S…`.
 2. **Test** — `pytest` with coverage. The report is uploaded to [Codecov](https://codecov.io), which requires a `CODECOV_TOKEN` repository secret.
-3. **Build** — `uv build`. The wheel is kept as an artifact.
-4. **Release** — only on a `v*.*.*` tag. It publishes the wheel built in the previous step to the matching GitHub Release, without rebuilding it.
+3. **Mutation** — pull requests only, after the tests. `mutmut` runs on `src/app/` and the job fails when the mutation score, killed mutants over all mutants, falls under `MUTATION_THRESHOLD` (70 %), set in the workflow. The score and the surviving mutants are written to the job summary.
+4. **Build** — `uv build`. The wheel is kept as an artifact.
+5. **Release** — only on a `v*.*.*` tag. It publishes the wheel built in the previous step to the matching GitHub Release, without rebuilding it.
 
 Pushing a `vX.Y.Z` tag therefore runs the full chain, then publishes the wheel, provided lint and tests pass.
 

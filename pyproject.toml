@@ -26,6 +26,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.0.0",
     "ruff>=0.16.9",
+    "mutmut>=3.8.0",
 ]
 
 [tool.pytest.ini_options]
@@ -44,3 +45,14 @@ lint.select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S105"]
+
+[tool.mutmut]
+source_paths = ["src/app/"]
+do_not_mutate = [
+    "src/app/models/*",
+    "src/app/extensions.py",
+    "src/app/database.py",
+    "src/app/documentation.py",
+    "src/app/__init__.py",
+]
+pytest_add_cli_args = ["--no-cov"]

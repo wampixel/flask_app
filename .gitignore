@@ -5,3 +5,4 @@
 coverage.xml
 
 \.*_cache/
+mutants/

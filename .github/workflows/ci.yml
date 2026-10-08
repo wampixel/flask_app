@@ -34,6 +34,31 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: true
 
+  mutation:
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      MUTATION_THRESHOLD: 70
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run mutmut run
+      - run: uv run mutmut export-cicd-stats
+      - name: Check mutation score
+        run: |
+          score=$(jq '.killed * 100 / (.total - .skipped) | floor' mutants/mutmut-cicd-stats.json)
+          {
+            echo "## Mutation score: ${score} % (threshold ${MUTATION_THRESHOLD} %)"
+            echo '```'
+            uv run mutmut results
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$score" -ge "$MUTATION_THRESHOLD" ]
+
   build:
     needs: test
     runs-on: ubuntu-latest
