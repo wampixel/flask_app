@@ -24,28 +24,28 @@ def test_valid_file_loads(tmp_path: Path) -> None:
 
 def test_missing_path_is_typed(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.delenv(CONF_ENV_VAR, raising=False)
-    with raises(ConfigError) as excinfo:
+    with raises(ConfigError, match=f"{CONF_ENV_VAR} is not set") as excinfo:
         load_configuration()
     assert excinfo.value.kind is ConfigErrorKind.MISSING_PATH
 
 
 def test_unreadable_file_is_typed(tmp_path: Path) -> None:
-    with raises(ConfigError) as excinfo:
+    with raises(ConfigError, match="absent.toml") as excinfo:
         load_configuration(str(tmp_path / "absent.toml"))
     assert excinfo.value.kind is ConfigErrorKind.UNREADABLE
 
 
 @mark.parametrize(
-    ("content", "kind"),
+    ("content", "kind", "message"),
     [
-        ("force_https = ", ConfigErrorKind.INVALID_TOML),
-        ("force_https = true", ConfigErrorKind.INVALID_SCHEMA),
-        (VALID + 'unknown = "x"\n', ConfigErrorKind.INVALID_SCHEMA),
+        ("force_https = ", ConfigErrorKind.INVALID_TOML, "configuration.toml"),
+        ("force_https = true", ConfigErrorKind.INVALID_SCHEMA, "Invalid configuration"),
+        (VALID + 'unknown = "x"\n', ConfigErrorKind.INVALID_SCHEMA, "Invalid configuration"),
     ],
     ids=["malformed", "missing_database", "unknown_key"],
 )
-def test_bad_content_is_typed(tmp_path: Path, content: str, kind: ConfigErrorKind) -> None:
-    with raises(ConfigError) as excinfo:
+def test_bad_content_is_typed(tmp_path: Path, content: str, kind: ConfigErrorKind, message: str) -> None:
+    with raises(ConfigError, match=message) as excinfo:
         load_configuration(write_config(tmp_path, content))
     assert excinfo.value.kind is kind
 
