@@ -4,6 +4,7 @@ from flask import Blueprint, Flask
 from flask.testing import FlaskClient
 from flask.views import MethodView
 from pytest import MonkeyPatch, fixture, mark
+from sqlalchemy import delete
 
 from app.extensions import db
 from app.middlewares import authenticate, public
@@ -120,6 +121,12 @@ def test_protected_route_rejects_session_idle_for_exactly_the_timeout(
     client: FlaskClient, token: str, frozen_now: datetime
 ) -> None:
     set_session(last_seen_at=frozen_now - IDLE_TIMEOUT)
+    assert client.get(USERS_URL, headers=bearer(token)).status_code == 401
+
+
+def test_protected_route_rejects_session_of_deleted_user(client: FlaskClient, token: str) -> None:
+    db.session.execute(delete(UserModel))
+    db.session.commit()
     assert client.get(USERS_URL, headers=bearer(token)).status_code == 401
 
 

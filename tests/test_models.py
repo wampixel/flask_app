@@ -1,5 +1,7 @@
 import pytest
 from flask import Flask
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import TenantModel, UserModel
@@ -47,7 +49,7 @@ def test_user_tenant_relationship_links_to_tenant(app_context: Flask) -> None:
     db.session.add(user)
     db.session.commit()
 
-    reloaded = db.session.get(UserModel, user.id)
+    reloaded = db.session.scalar(select(UserModel).options(joinedload(UserModel.tenant)).where(UserModel.id == user.id))
     assert reloaded is not None
     assert reloaded.tenant_id == tenant.id
     assert reloaded.tenant.name == "acme"

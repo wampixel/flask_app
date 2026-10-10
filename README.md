@@ -134,6 +134,21 @@ Session rules:
 - A token is also rejected after 30 minutes without use.
 - Only the SHA-512 hash of the token is stored. Passwords are hashed with Argon2.
 - Usernames are matched in lowercase.
+- A token whose user no longer exists is rejected.
+
+## Tenant isolation
+
+Every user belongs to one tenant. Authentication stores the caller tenant id in `flask.g` for the duration of the request.
+
+- `GET /users` lists only the users of the caller tenant.
+- `GET /users/{user_id}` returns `404` for a user of another tenant, as if it did not exist.
+- A new route that reads tenant data must filter on `g.current_tenant_id`.
+
+Relationships are declared with `lazy="raise"`. Reading `user.tenant` or `session.user` without loading it in the query raises an error instead of running a hidden `SELECT`. Load it explicitly:
+
+```python
+select(UserModel).options(joinedload(UserModel.tenant))
+```
 
 ## Demo data
 
@@ -256,6 +271,24 @@ The [.github/workflows/ci.yml](.github/workflows/ci.yml) workflow runs on every 
 5. **Release** — only on a `v*.*.*` tag. It publishes the wheel built in the previous step to the matching GitHub Release, without rebuilding it.
 
 Pushing a `vX.Y.Z` tag therefore runs the full chain, then publishes the wheel, provided lint and tests pass.
+
+## Improvements
+
+Known limits, and the change that would lift them. None is implemented yet.
+
+### Automatic tenant filter with `with_loader_criteria`
+
+Today each route adds the tenant filter by hand, through `select_tenant_users()` in [src/app/routes/users.py](src/app/routes/users.py). A new route that forgets the filter leaks the data of every tenant, and nothing fails.
+
+SQLAlchemy can add the filter itself:
+
+- Listen to the `do_orm_execute` session event.
+- On every `SELECT`, apply `with_loader_criteria(TenantMixin, lambda cls: cls.tenant_id == tenant_id, include_aliases=True)`.
+- Every model built on `TenantMixin` is then filtered on the caller tenant, including the rows loaded through a relationship.
+
+This is more robust than the manual filter: a route can no longer forget it. It needs an explicit way out for the code that runs without a tenant: login, the CLI commands and the migrations.
+
+It is worth doing as soon as a second model uses `TenantMixin`.
 
 ## License
 

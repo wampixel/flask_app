@@ -11,4 +11,4 @@ class TenantMixin:
 
     @declared_attr
     def tenant(cls) -> Mapped[TenantModel]:
-        return relationship(TenantModel)
+        return relationship(TenantModel, lazy="raise")

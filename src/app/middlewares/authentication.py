@@ -2,8 +2,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import NoReturn
 
-from flask import abort, current_app, request
+from flask import abort, current_app, g, request
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import SessionModel
@@ -44,7 +45,9 @@ def authenticate() -> None:
 
     now = datetime.now(UTC)
     session = db.session.scalar(
-        select(SessionModel).where(
+        select(SessionModel)
+        .options(joinedload(SessionModel.user, innerjoin=True))
+        .where(
             SessionModel.token_hash == get_sha512_hash(token),
             SessionModel.expires_at > now,
             SessionModel.last_seen_at > now - IDLE_TIMEOUT,
@@ -54,5 +57,6 @@ def authenticate() -> None:
     if not session:
         unauthorized()
 
+    g.current_tenant_id = session.user.tenant_id
     session.last_seen_at = now
     db.session.commit()

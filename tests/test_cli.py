@@ -1,4 +1,5 @@
 from flask import Flask
+from sqlalchemy.orm import joinedload
 
 from app.models import TenantModel, UserModel
 from app.utils.crypto import check_argon2_hash
@@ -10,7 +11,7 @@ def test_seed_db_links_users_to_real_tenants(app_context: Flask) -> None:
     result = app_context.test_cli_runner().invoke(args=SEED_ARGS)
     assert result.exit_code == 0
 
-    users_by_name = {(u.name, u.last_name): u for u in UserModel.query.all()}
+    users_by_name = {(u.name, u.last_name): u for u in UserModel.query.options(joinedload(UserModel.tenant)).all()}
     john_doe = users_by_name[("John", "Doe")]
     john_dont = users_by_name[("John", "Don't")]
 
