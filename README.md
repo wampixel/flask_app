@@ -135,6 +135,7 @@ Session rules:
 - Only the SHA-512 hash of the token is stored. Passwords are hashed with Argon2.
 - Usernames are matched in lowercase.
 - A token whose user no longer exists is rejected.
+- Deleting a user through the ORM, with `db.session.delete(user)`, deletes its sessions. The cascade is declared on `UserModel.sessions`, so it does not depend on the database engine. A bulk `delete(UserModel)` statement skips it.
 
 ## Tenant isolation
 

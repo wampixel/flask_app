@@ -1,10 +1,15 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import event
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import String
 
 from app.extensions import db
 
 from .mixins import TenantMixin
+
+if TYPE_CHECKING:
+    from .session import SessionModel
 
 
 class UserModel(TenantMixin, db.Model):
@@ -14,6 +19,9 @@ class UserModel(TenantMixin, db.Model):
     name: Mapped[str] = mapped_column(String(50))
     last_name: Mapped[str] = mapped_column(String(50))
     passphrase: Mapped[str] = mapped_column(String(512))
+    sessions: Mapped[list[SessionModel]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", lazy="raise"
+    )
 
     @validates("name", "last_name", "username", "passphrase")
     def validate_not_blank(self, key: str, value: str) -> str:

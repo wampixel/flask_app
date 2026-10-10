@@ -1,11 +1,13 @@
+from datetime import UTC, datetime
+
 import pytest
 from flask import Flask
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import TenantModel, UserModel
-from app.utils import get_argon2_hash
+from app.models import SessionModel, TenantModel, UserModel
+from app.utils import get_argon2_hash, get_sha512_hash
 
 
 @pytest.mark.parametrize("blank", ["", "   "])
@@ -64,3 +66,22 @@ def test_user_password_not_nullable(app_context: Flask) -> None:
     db.session.add(user)
     with pytest.raises(ValueError):
         db.session.commit()
+
+
+def test_deleting_user_removes_its_sessions(app_context: Flask) -> None:
+    user = UserModel(
+        username="jdoe",
+        name="John",
+        last_name="Doe",
+        tenant=TenantModel(name="acme"),
+        passphrase=get_argon2_hash("Changeit"),
+    )
+    db.session.add(user)
+    db.session.commit()
+    db.session.add(SessionModel(token_hash=get_sha512_hash("token"), user_id=user.id, expires_at=datetime.now(UTC)))
+    db.session.commit()
+
+    db.session.delete(user)
+    db.session.commit()
+
+    assert db.session.scalar(select(func.count()).select_from(SessionModel)) == 0
